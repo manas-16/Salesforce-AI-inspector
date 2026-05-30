@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "Salesforce (AI)nspector",
+  "version": "1.0.0",
+  "description": "AI-powered assistant for Salesforce org management, debugging, and automation.",
+
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "cookies"
+  ],
+
+  "host_permissions": [
+    "https://*.salesforce.com/*",
+    "https://*.force.com/*",
+    "https://*.lightning.force.com/*",
+    "http://localhost:*/*",
+    "http://127.0.0.1:*/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.salesforce.com/*",
+        "https://*.force.com/*",
+        "https://*.lightning.force.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "action": {
+    "default_popup": "settings/settings.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Salesforce (AI)nspector"
+  },
+  "options_ui": {
+    "page": "settings/settings.html",
+    "open_in_tab": false
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["sidebar/sidebar.html"],
+      "matches": [
+        "https://*.salesforce.com/*",
+        "https://*.force.com/*",
+        "https://*.lightning.force.com/*"
+      ]
+    }
+  ]
+}

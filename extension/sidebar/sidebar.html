@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Salesforce (AI)nspector</title>
+  <link rel="stylesheet" href="sidebar.css" />
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-left">
+      <span class="header-logo">✦</span>
+      <span class="header-title">Salesforce <span class="header-accent">(AI)</span>nspector</span>
+    </div>
+    <div class="header-right">
+      <button id="btn-clear" class="icon-btn" title="Clear conversation">⟳</button>
+      <button id="btn-settings" class="icon-btn" title="Settings">⚙</button>
+    </div>
+  </header>
+
+  <!-- ── ORG BANNER ─────────────────────────────────────────────────────── -->
+  <div id="org-banner" class="org-banner hidden">
+    <span id="org-status-icon">●</span>
+    <span id="org-status-text">Connecting...</span>
+  </div>
+
+  <!-- ── PRODUCTION WARNING ─────────────────────────────────────────────── -->
+  <div id="prod-warning" class="prod-warning hidden">
+    ⚠️ <strong>Production Org Detected.</strong> Write operations are disabled. Read-only mode active.
+  </div>
+
+  <!-- ── CHAT MESSAGES ──────────────────────────────────────────────────── -->
+  <main id="chat-container" class="chat-container">
+    <!-- Welcome message -->
+    <div class="message assistant-message">
+      <div class="message-avatar">✦</div>
+      <div class="message-content">
+        <p>Hi! I'm your Salesforce AI assistant.</p>
+        <p>I can help you with:</p>
+        <ul>
+          <li>User management & permissions</li>
+          <li>Metadata & field creation</li>
+          <li>Data queries & analysis</li>
+          <li>Debug log analysis & RCA</li>
+          <li>Audit trail investigation</li>
+          <li>Test data & test class generation</li>
+        </ul>
+        <p>Upload a file or just type your request below.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── FILE PREVIEW ───────────────────────────────────────────────────── -->
+  <div id="file-preview" class="file-preview hidden">
+    <div class="file-preview-inner">
+      <span id="file-preview-name" class="file-name"></span>
+      <button id="btn-remove-file" class="remove-file-btn" title="Remove file">✕</button>
+    </div>
+  </div>
+
+  <!-- ── INPUT AREA ─────────────────────────────────────────────────────── -->
+  <footer class="input-area">
+    <div class="input-row">
+      <label for="file-input" class="attach-btn" title="Attach file">
+        <span>📎</span>
+        <input type="file" id="file-input" accept=".csv,.json,.xlsx,.cls,.xml" hidden />
+      </label>
+      <textarea
+        id="user-input"
+        class="user-input"
+        placeholder="Ask anything about your Salesforce org..."
+        rows="1"
+      ></textarea>
+      <button id="btn-send" class="send-btn" title="Send">
+        <span id="send-icon">➤</span>
+        <span id="loading-spinner" class="spinner hidden"></span>
+      </button>
+    </div>
+    <div class="input-hint">
+      Shift+Enter for new line · Enter to send
+    </div>
+  </footer>
+
+  <script src="sidebar.js"></script>
+</body>
+</html>

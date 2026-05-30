@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Salesforce (AI)nspector — Settings</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:       #1b4f8a;
+      --primary-light: #2e86c1;
+      --accent:        #f39c12;
+      --bg:            #f4f6f9;
+      --surface:       #ffffff;
+      --border:        #dce3ec;
+      --text:          #1a1a1a;
+      --text-muted:    #6b7a90;
+      --error:         #e74c3c;
+      --success:       #27ae60;
+      --radius:        8px;
+      --font:          'Segoe UI', Arial, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+      min-width: 360px;
+      padding: 0;
+    }
+
+    .header {
+      background: var(--primary);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-logo  { font-size: 20px; color: var(--accent); }
+    .header-title { font-size: 14px; font-weight: 600; color: #fff; }
+    .header-accent { color: var(--accent); }
+
+    .content { padding: 20px 18px; display: flex; flex-direction: column; gap: 20px; }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--primary);
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .password-flow-field { display: none; }
+
+    label { font-size: 12px; font-weight: 600; color: var(--text); }
+
+    .label-hint {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.15s;
+      background: var(--surface);
+    }
+    .input-wrap:focus-within {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(46,134,193,0.1);
+    }
+
+    input[type="password"], input[type="text"] {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 9px 12px;
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--text);
+      background: transparent;
+    }
+
+    input.mono { font-family: 'Consolas', monospace; font-size: 12px; }
+
+    .toggle-visibility {
+      background: none;
+      border: none;
+      padding: 0 10px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 14px;
+      transition: color 0.15s;
+    }
+    .toggle-visibility:hover { color: var(--primary); }
+
+    .provider-select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface);
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .provider-select:focus {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(46,134,193,0.1);
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .btn-row { display: flex; gap: 8px; }
+
+    .btn {
+      flex: 1;
+      padding: 9px 14px;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-light); }
+    .btn-secondary { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #e8ecf1; }
+
+    .status-msg {
+      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-msg.success { display: flex; background: #eafaf1; border: 1px solid #a9dfbf; color: var(--success); }
+    .status-msg.error   { display: flex; background: #fdedec; border: 1px solid #f5b7b1; color: var(--error); }
+
+    .info-box {
+      background: #eaf4fb;
+      border: 1px solid #aed6f1;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 11.5px;
+      color: #1a5276;
+      line-height: 1.6;
+    }
+    .info-box a { color: var(--primary-light); text-decoration: none; }
+    .info-box a:hover { text-decoration: underline; }
+    .info-box code {
+      background: rgba(0,0,0,0.06);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: 'Consolas', monospace;
+    }
+
+    .key-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
+    .key-status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+    .key-status.saved .dot  { background: var(--success); }
+    .key-status.saved       { color: var(--success); }
+    .key-status.missing .dot { background: var(--error); }
+    .key-status.missing     { color: var(--error); }
+
+    .connected-badge {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 5px 10px;
+      background: #eafaf1;
+      border: 1px solid #a9dfbf;
+      border-radius: 6px;
+      color: var(--success);
+    }
+    .connected-badge.visible { display: flex; }
+    .connected-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+
+    .footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <span class="header-logo">✦</span>
+    <span class="header-title">Salesforce <span class="header-accent">(AI)</span>nspector · Settings</span>
+  </div>
+
+  <div class="content">
+
+    <!-- ── SALESFORCE CONNECTION ── -->
+    <div class="section">
+      <div class="section-title">Salesforce Connection</div>
+
+      <div id="sf-connected-badge" class="connected-badge">
+        <span class="dot"></span>
+        <span id="sf-connected-text">Connected</span>
+      </div>
+
+      <div class="field">
+        <label>Consumer Key <span class="label-hint">from External Client App</span></label>
+        <div class="input-wrap">
+          <input type="password" id="consumer-key" class="mono" placeholder="3MVG9..." autocomplete="off" spellcheck="false"/>
+          <button class="toggle-visibility" data-target="consumer-key">👁</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Consumer Secret <span class="label-hint">optional for PKCE public clients</span></label>
+        <div class="input-wrap">
+          <input type="password" id="consumer-secret" class="mono" placeholder="ABCDEF123..." autocomplete="off" spellcheck="false"/>
+          <button class="toggle-visibility" data-target="consumer-secret">👁</button>
+        </div>
+      </div>
+
+      <div class="field password-flow-field">
+        <label>Username</label>
+        <div class="input-wrap">
+          <input type="text" id="sf-username" placeholder="you@yourorg.com" spellcheck="false"/>
+        </div>
+      </div>
+
+      <div class="field password-flow-field">
+        <label>Password</label>
+        <div class="input-wrap">
+          <input type="password" id="sf-password" placeholder="Your Salesforce password" autocomplete="off"/>
+          <button class="toggle-visibility" data-target="sf-password">👁</button>
+        </div>
+      </div>
+
+      <div class="field password-flow-field">
+        <label>Security Token <span class="label-hint">Setup → Reset My Security Token</span></label>
+        <div class="input-wrap">
+          <input type="password" id="sf-security-token" class="mono" placeholder="Leave blank if IP is trusted" autocomplete="off"/>
+          <button class="toggle-visibility" data-target="sf-security-token">👁</button>
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="is-sandbox" />
+        <label for="is-sandbox" style="font-weight:400">This is a sandbox org</label>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-sf-login">Connect to Salesforce</button>
+        <button class="btn btn-secondary" id="btn-sf-disconnect">Disconnect</button>
+      </div>
+
+      <div id="sf-login-status" class="status-msg"></div>
+
+      <div class="info-box">
+        <strong>External Client App OAuth:</strong><br/>
+        Callback URL: <code>http://localhost:8000/oauth/callback</code><br/>
+        Flow: Authorization Code with PKCE<br/>
+        Scopes: <code>api</code>, <code>refresh_token</code><br/><br/>
+        Username, password, and security token are no longer sent to the backend.
+      </div>
+    </div>
+
+    <!-- ── LLM PROVIDER ── -->
+    <div class="section">
+      <div class="section-title">LLM Provider</div>
+
+      <div class="field">
+        <label for="provider-select">Provider</label>
+        <select id="provider-select" class="provider-select">
+          <option value="anthropic">Anthropic (Claude Sonnet)</option>
+          <option value="openai">OpenAI (GPT-4o)</option>
+          <option value="google">Google (gemini-3-flash-preview)</option>
+        </select>
+      </div>
+
+      <div id="key-status" class="key-status missing">
+        <span class="dot"></span>
+        <span id="key-status-text">No key saved</span>
+      </div>
+
+      <div class="field">
+        <label for="api-key-input">
+          API Key
+          <span class="label-hint" id="key-hint">starts with sk-ant-...</span>
+        </label>
+        <div class="input-wrap">
+          <input type="password" id="api-key-input" class="mono"
+            placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false"/>
+          <button class="toggle-visibility" data-target="api-key-input">👁</button>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-save-key">Save Key</button>
+        <button class="btn btn-secondary" id="btn-clear-key">Clear</button>
+      </div>
+
+      <div id="key-status-msg" class="status-msg"></div>
+
+      <div class="info-box">
+        Your API key is stored locally in <code>chrome.storage.local</code>
+        and never persisted on the backend.<br/><br/>
+        Get your key: <a href="#" id="provider-link" target="_blank">console.anthropic.com</a>
+      </div>
+    </div>
+
+    <!-- ── BACKEND URL ── -->
+    <div class="section">
+      <div class="section-title">Backend URL</div>
+
+      <div class="field">
+        <label for="backend-url-input">FastAPI Backend <span class="label-hint">default: localhost:8000</span></label>
+        <div class="input-wrap">
+          <input type="text" id="backend-url-input" class="mono" placeholder="http://localhost:8000" spellcheck="false"/>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-save-backend">Save URL</button>
+        <button class="btn btn-secondary" id="btn-test-backend">Test Connection</button>
+      </div>
+
+      <div id="backend-status-msg" class="status-msg"></div>
+    </div>
+
+  </div>
+
+  <div class="footer">Salesforce (AI)nspector · POC Build · Sandbox Only</div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
