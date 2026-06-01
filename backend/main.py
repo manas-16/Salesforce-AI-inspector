@@ -56,7 +56,7 @@ class OAuthAuthorizeRequest(BaseModel):
     consumer_key:    str
     consumer_secret: str = ''
     is_sandbox:      bool = False
-    redirect_uri:    str = 'http://127.0.0.1:8000/oauth/callback'
+    redirect_uri:    str = 'http://localhost:8000/oauth/callback'
 
 # ─── HEALTH ───────────────────────────────────────────────────────────────────
 
@@ -181,6 +181,9 @@ async def chat(request: ChatRequest):
         org_is_sandbox = False
 
     is_production = not org_is_sandbox
+    if request.treat_as_sandbox:
+        is_production = False
+        logger.info('Sandbox override enabled by client.')
 
     if is_production:
         logger.info('Production org detected — write operations blocked.')

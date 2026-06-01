@@ -222,6 +222,7 @@
       instanceUrl,
       pageContext:  orgContext?.pageContext || {},
       isProbablyProduction: Boolean(orgContext?.isProbablyProduction),
+      treatAsSandbox: Boolean(orgContext?.treatAsSandbox),
     };
     const displayText  = text || `[File: ${attachedFile?.name}]`;
     appendUserMessage(displayText, attachedFile?.name);
@@ -260,14 +261,15 @@
 
   async function streamResponse(file, typingEl) {
     const payload = {
-      message:      conversationHistory[conversationHistory.length - 1].content,
-      history:      conversationHistory.slice(0, -1),
-      session_id:   orgContext.sessionId,
-      instance_url: orgContext.instanceUrl,
-      api_key:      apiKey,
-      llm_provider: llmProvider,
-      page_context: orgContext.pageContext,
-      is_production: orgContext.isProbablyProduction,
+      message:           conversationHistory[conversationHistory.length - 1].content,
+      history:           conversationHistory.slice(0, -1),
+      session_id:        orgContext.sessionId,
+      instance_url:      orgContext.instanceUrl,
+      api_key:           apiKey,
+      llm_provider:      llmProvider,
+      page_context:      orgContext.pageContext,
+      is_production:     orgContext.isProbablyProduction,
+      treat_as_sandbox:  Boolean(orgContext.treatAsSandbox),
     };
 
     if (file) {

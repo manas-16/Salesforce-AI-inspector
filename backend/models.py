@@ -28,6 +28,7 @@ class ChatRequest(BaseModel):
     history: list[HistoryMessage] = Field(default=[], description='Conversation history')
     page_context: Optional[PageContext] = None
     is_production: bool         = Field(default=False, description='Client-side production hint')
+    treat_as_sandbox: bool      = Field(default=False, description='Client-side sandbox override')
 
     # Optional file attachment
     file_name: Optional[str]    = None
