@@ -35,7 +35,7 @@
     const stored = await new Promise(r =>
       chrome.storage.local.get(
         ['sfAccessToken', 'sfInstanceUrl', 'backendUrl',
-         'anthropicApiKey', 'openaiApiKey', 'googleApiKey', 'llmProvider'],
+         'anthropicApiKey', 'openaiApiKey', 'googleApiKey', 'llmProvider', 'sfTreatAsSandbox'],
         r
       )
     );
@@ -58,6 +58,7 @@
         instanceUrl:          stored.sfInstanceUrl,
         pageContext:          {},
         isProbablyProduction: false,
+        treatAsSandbox:       Boolean(stored.sfTreatAsSandbox),
       };
       showOrgBanner('connected', `Connected · ${new URL(stored.sfInstanceUrl).hostname}`);
     } else {
@@ -75,12 +76,15 @@
     if (event.data?.type !== 'SF_CONTEXT') return;
 
     const ctx = event.data;
+    const treatAsSandbox = orgContext?.treatAsSandbox || false;
+    const detectedProduction = Boolean(ctx.isProbablyProduction);
 
     orgContext = {
       sessionId: orgContext?.sessionId || ctx.sessionId || null,
       instanceUrl: orgContext?.instanceUrl || ctx.instanceUrl || null,
       pageContext: ctx.pageContext || orgContext?.pageContext || {},
-      isProbablyProduction: Boolean(ctx.isProbablyProduction),
+      isProbablyProduction: detectedProduction && !treatAsSandbox,
+      treatAsSandbox,
     };
 
     if (orgContext.sessionId && orgContext.instanceUrl) {

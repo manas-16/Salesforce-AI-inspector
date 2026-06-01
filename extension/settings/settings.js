@@ -49,6 +49,7 @@
   const sfPasswordInput     = document.getElementById('sf-password');
   const sfTokenInput        = document.getElementById('sf-security-token');
   const isSandboxCheckbox   = document.getElementById('is-sandbox');
+  const treatAsSandboxCheckbox = document.getElementById('treat-as-sandbox');
   const btnSfLogin          = document.getElementById('btn-sf-login');
   const btnSfDisconnect     = document.getElementById('btn-sf-disconnect');
   const sfLoginStatus       = document.getElementById('sf-login-status');
@@ -66,7 +67,7 @@
     chrome.storage.local.get(
       ['llmProvider', 'anthropicApiKey', 'openaiApiKey', 'googleApiKey',
        'backendUrl', 'sfAccessToken', 'sfInstanceUrl',
-       'sfUsername', 'sfConsumerKey', 'sfIsSandbox'],
+       'sfUsername', 'sfConsumerKey', 'sfIsSandbox', 'sfTreatAsSandbox'],
       (result) => {
         // LLM provider
         const savedProvider = result.llmProvider || 'anthropic';
@@ -91,8 +92,9 @@
           if (result.sfConsumerKey)  consumerKeyInput.value    = result.sfConsumerKey;
         }
 
-        // Sandbox checkbox — default checked for dev orgs
+        // Sandbox options
         isSandboxCheckbox.checked = Boolean(result.sfIsSandbox);
+        treatAsSandboxCheckbox.checked = Boolean(result.sfTreatAsSandbox);
       }
     );
   }
@@ -142,7 +144,7 @@
 
   btnSfDisconnect.addEventListener('click', () => {
     chrome.storage.local.remove(
-      ['sfAccessToken', 'sfRefreshToken', 'sfInstanceUrl', 'sfUsername', 'sfConsumerKey', 'sfIsSandbox'],
+      ['sfAccessToken', 'sfRefreshToken', 'sfInstanceUrl', 'sfUsername', 'sfConsumerKey', 'sfIsSandbox', 'sfTreatAsSandbox'],
       () => {
         sfConnectedBadge.classList.remove('visible');
         consumerKeyInput.value    = '';
@@ -235,6 +237,10 @@
     } catch {
       showStatus(backendStatusMsg, 'error', 'Could not reach backend. Is it running?');
     }
+  });
+
+  treatAsSandboxCheckbox.addEventListener('change', () => {
+    chrome.storage.local.set({ sfTreatAsSandbox: treatAsSandboxCheckbox.checked });
   });
 
   // ─── TOGGLE VISIBILITY (all fields) ─────────────────────────────────────────
