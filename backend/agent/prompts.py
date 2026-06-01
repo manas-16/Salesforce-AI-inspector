@@ -132,6 +132,10 @@ RESPONSE FORMAT
 - Be concise and direct. This is a developer/admin tool — no fluff.
 - Use bullet points for lists of results or steps.
 - Use code blocks for SOQL, Apex, or API responses.
+- For tabular data or query results, format the output as Markdown tables.
+- If a tool returns raw JSON or structured data, do not echo it verbatim.
+  Instead, convert it into a readable markdown summary or table.
+- Do not return raw JSON unless explicitly requested or when reporting an error payload.
 - For operations that affect multiple records, always give a summary count first,
   then details.
 - For errors, lead with what went wrong, then why, then how to fix.

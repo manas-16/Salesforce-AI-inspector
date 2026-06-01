@@ -223,7 +223,7 @@ def create_authorization_url(
     consumer_key: str,
     consumer_secret: str = '',
     is_sandbox: bool = False,
-    redirect_uri: str = 'http://localhost:8000/oauth/callback',
+    redirect_uri: str = 'http://127.0.0.1:8000/oauth/callback',
 ) -> dict:
     _cleanup_oauth_states()
 

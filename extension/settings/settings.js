@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  const DEFAULT_BACKEND_URL = 'http://localhost:8000';
+  const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8000';
 
   const PROVIDER_META = {
     anthropic: {
@@ -23,12 +23,12 @@
       validationMsg: 'Invalid key. OpenAI keys start with sk-',
     },
     google: {
-      placeholder: 'AIza...',
-      hint:        'starts with AIza...',
+      placeholder: 'AIza... or AQ...',
+      hint:        'from Google AI Studio',
       link:        'https://aistudio.google.com/app/apikey',
       linkText:    'aistudio.google.com',
-      validate:    (k) => k.startsWith('AIza'),
-      validationMsg: 'Invalid key. Google keys start with AIza',
+      validate:    (k) => k.length > 20,  // just check length, no prefix check
+      validationMsg: 'Key too short — paste the full key from AI Studio',
     },
   };
 
@@ -81,7 +81,7 @@
         }
 
         // Backend URL
-        backendUrlInput.value = result.backendUrl || DEFAULT_BACKEND_URL;
+        backendUrlInput.value = normalizeBackendUrl(result.backendUrl);
 
         // Salesforce connection
         if (result.sfAccessToken && result.sfInstanceUrl) {
@@ -100,7 +100,7 @@
   // ─── SALESFORCE OAUTH LOGIN ─────────────────────────────────────────────────
 
   btnSfLogin.addEventListener('click', async () => {
-    const backendUrl = backendUrlInput.value.trim() || DEFAULT_BACKEND_URL;
+    const backendUrl = normalizeBackendUrl(backendUrlInput.value);
 
     const body = {
       consumer_key:    consumerKeyInput.value.trim(),
@@ -213,7 +213,7 @@
   // ─── BACKEND URL ────────────────────────────────────────────────────────────
 
   btnSaveBackend.addEventListener('click', () => {
-    const url = backendUrlInput.value.trim();
+    const url = normalizeBackendUrl(backendUrlInput.value);
     if (!url) { showStatus(backendStatusMsg, 'error', 'Please enter a URL.'); return; }
     try { new URL(url); } catch { showStatus(backendStatusMsg, 'error', 'Invalid URL.'); return; }
     chrome.storage.local.set({ backendUrl: url }, () => {
@@ -222,7 +222,7 @@
   });
 
   btnTestBackend.addEventListener('click', async () => {
-    const url = backendUrlInput.value.trim() || DEFAULT_BACKEND_URL;
+    const url = normalizeBackendUrl(backendUrlInput.value);
     showStatus(backendStatusMsg, 'success', 'Testing...');
     try {
       const r = await fetch(`${url}/health`);
@@ -263,6 +263,11 @@
     if (type === 'success') {
       setTimeout(() => { el.className = 'status-msg'; el.textContent = ''; }, 4000);
     }
+  }
+
+  function normalizeBackendUrl(url) {
+    const normalized = (url || DEFAULT_BACKEND_URL).trim().replace(/\/+$/, '');
+    return normalized.replace('http://localhost:', 'http://127.0.0.1:');
   }
 
   init();

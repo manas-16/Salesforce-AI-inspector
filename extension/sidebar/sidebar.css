@@ -162,6 +162,12 @@ body {
   max-width: 100%;
 }
 
+/* Align user messages to the right and reverse their order so avatar appears on the right */
+.message.user-message {
+  flex-direction: row-reverse;
+  align-self: flex-end;
+}
+
 .message-avatar {
   width: 28px;
   height: 28px;
@@ -181,17 +187,73 @@ body {
   border: 1px solid var(--ai-border);
   border-radius: 0 var(--radius) var(--radius) var(--radius);
   padding: 10px 13px;
-  line-height: 1.6;
+  line-height: 1.5;
   font-size: 13px;
   word-break: break-word;
+  white-space: normal;
   flex: 1;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.message-content p { margin-bottom: 6px; }
-.message-content p:last-child { margin-bottom: 0; }
-.message-content ul { padding-left: 18px; margin: 6px 0; }
-.message-content li { margin-bottom: 3px; }
+/* Limit bubble width so text wraps instead of overflowing */
+.message-content {
+  max-width: min(72%, 520px);
+}
+
+.message-content p {
+  margin: 0 0 10px;
+}
+
+.message-content ul,
+.message-content ol {
+  margin: 0 0 10px;
+  padding-left: 18px;
+}
+
+.message-content li {
+  margin-bottom: 4px;
+}
+
+/* Distinct bubble colors for user vs assistant */
+.message.user-message .message-content {
+  background: var(--user-bubble);
+  color: var(--user-text);
+  border-color: rgba(0,0,0,0.06);
+}
+
+/* Slightly narrower bubbles for user messages */
+.message.user-message .message-content {
+  max-width: min(66%, 480px);
+}
+
+/* Flip the sharp corner for user messages (sharp on top-right) */
+.message.user-message .message-content {
+  border-radius: var(--radius) 0 var(--radius) var(--radius);
+}
+
+/* Make the user's avatar match their bubble and appear on the right */
+.message.user-message .message-avatar {
+  background: var(--user-bubble);
+  color: var(--user-text);
+}
+
+.message.assistant-message .message-content {
+  background: var(--ai-bubble);
+  color: var(--text);
+}
+
+/* Long messages get a reduced font-size to fit better */
+.message-content.long {
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 8px 10px;
+}
+
+/* Ensure long single-word tokens wrap instead of overflowing */
+.message-content {
+  overflow-wrap: anywhere;
+}
+
 .message-content code {
   background: #f0f3f7;
   padding: 1px 5px;
@@ -199,6 +261,7 @@ body {
   font-family: 'Consolas', monospace;
   font-size: 12px;
 }
+
 .message-content pre {
   background: #1e2a3a;
   color: #e8edf3;
@@ -211,25 +274,32 @@ body {
   line-height: 1.5;
 }
 
-/* User message — right aligned, no avatar */
-.user-message {
-  flex-direction: row-reverse;
+.markdown-table-wrapper {
+  overflow-x: auto;
+  margin: 10px 0;
+  max-width: 100%;
 }
 
-.user-message .message-content {
-  background: var(--user-bubble);
-  color: var(--user-text);
-  border: none;
-  border-radius: var(--radius) 0 var(--radius) var(--radius);
-  box-shadow: 0 1px 4px rgba(27,79,138,0.25);
+.markdown-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 12px;
 }
 
-.user-message .message-content code {
-  background: rgba(255,255,255,0.15);
-  color: #fff;
+.markdown-table th,
+.markdown-table td {
+  border: 1px solid #dce3ec;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
 }
 
-/* Error message */
+.markdown-table th {
+  background: #f4f6f9;
+  color: #374151;
+}
+
 .error-message .message-content {
   background: #fdf0ef;
   border-color: #f5c6c2;
@@ -247,7 +317,7 @@ body {
 .typing-indicator span {
   width: 7px;
   height: 7px;
-  background: var(--text-muted);
+  background: var(--primary);
   border-radius: 50%;
   animation: bounce 1.2s infinite ease-in-out;
 }
@@ -363,18 +433,7 @@ body {
   max-height: 120px;
   overflow-y: auto;
   outline: none;
-}
-
-.user-input::placeholder { color: var(--text-muted); }
-
-.send-btn {
-  background: var(--primary);
-  border: none;
-  color: #fff;
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
-  cursor: pointer;
+  white-space: pre-wrap;
   font-size: 14px;
   display: flex;
   align-items: center;

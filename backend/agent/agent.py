@@ -262,7 +262,29 @@ async def run_agent_stream(
         return
 
     # Try async streaming if available
-    if hasattr(agent_executor, 'astream'):
+    # Use astream_events for better control over what events to stream
+    if hasattr(agent_executor, 'astream_events'):
+        async for event in agent_executor.astream_events(
+            inputs,
+            version='v2',
+        ):
+            kind = event.get('event')
+            
+            # Only yield from final LLM response events (not tool calls or intermediate steps)
+            if kind == 'on_chat_model_stream':
+                chunk = event.get('data', {}).get('chunk')
+                if chunk and hasattr(chunk, 'content'):
+                    content = chunk.content
+                    if isinstance(content, str) and content:
+                        yield content
+                    elif isinstance(content, list):
+                        for block in content:
+                            if isinstance(block, dict) and block.get('type') == 'text':
+                                text = block.get('text', '')
+                                if text:
+                                    yield text
+    elif hasattr(agent_executor, 'astream'):
+        # Fallback: use astream with message stream mode (filters to final messages)
         async for chunk in agent_executor.astream(inputs, stream_mode="messages"):
             # chunk may be str, dict, or object — handle common shapes
             if chunk is None:

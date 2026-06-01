@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  let BACKEND_URL = 'http://localhost:8000';
+  let BACKEND_URL = 'http://127.0.0.1:8000';
 
   // ─── STATE ───────────────────────────────────────────────────────────────
   let orgContext = null;
@@ -41,7 +41,7 @@
     );
 
     // Backend URL
-    if (stored.backendUrl) BACKEND_URL = stored.backendUrl;
+    if (stored.backendUrl) BACKEND_URL = normalizeBackendUrl(stored.backendUrl);
 
     // LLM provider + key
     llmProvider = stored.llmProvider || 'anthropic';
@@ -76,12 +76,17 @@
 
     const ctx = event.data;
 
-    // Merge page context into orgContext if session already set via OAuth
-    if (orgContext) {
-      orgContext.pageContext = ctx.pageContext || {};
-      // Don't overwrite sessionId — keep the OAuth token
-    }
+    orgContext = {
+      sessionId: orgContext?.sessionId || ctx.sessionId || null,
+      instanceUrl: orgContext?.instanceUrl || ctx.instanceUrl || null,
+      pageContext: ctx.pageContext || orgContext?.pageContext || {},
+      isProbablyProduction: Boolean(ctx.isProbablyProduction),
+    };
 
+    if (orgContext.sessionId && orgContext.instanceUrl) {
+      showOrgBanner('connected', `Connected · ${new URL(orgContext.instanceUrl).hostname}`);
+      prodWarning.classList.toggle('hidden', !orgContext.isProbablyProduction);
+    }
     if (ctx.pageContext?.heading) {
       appendContextHint(ctx.pageContext);
     }
@@ -190,7 +195,7 @@
       )
     );
 
-    if (stored.backendUrl) BACKEND_URL = stored.backendUrl;
+    if (stored.backendUrl) BACKEND_URL = normalizeBackendUrl(stored.backendUrl);
     llmProvider = stored.llmProvider || 'anthropic';
     apiKey      = stored[`${llmProvider}ApiKey`] || null;
 
@@ -199,19 +204,21 @@
       return;
     }
 
-    if (!stored.sfAccessToken || !stored.sfInstanceUrl) {
+    const sessionId = stored.sfAccessToken || orgContext?.sessionId;
+    const instanceUrl = stored.sfInstanceUrl || orgContext?.instanceUrl;
+
+    if (!sessionId || !instanceUrl) {
       showError('Not connected to Salesforce. Click ⚙ → Connect to Salesforce.');
       return;
     }
 
     // Update orgContext with latest token
     orgContext = {
-      sessionId:    stored.sfAccessToken,
-      instanceUrl:  stored.sfInstanceUrl,
+      sessionId,
+      instanceUrl,
       pageContext:  orgContext?.pageContext || {},
-      isProbablyProduction: false,
+      isProbablyProduction: Boolean(orgContext?.isProbablyProduction),
     };
-
     const displayText  = text || `[File: ${attachedFile?.name}]`;
     appendUserMessage(displayText, attachedFile?.name);
 
@@ -276,38 +283,73 @@
       throw new Error(err.detail || `HTTP ${response.status}`);
     }
 
-    typingEl.remove();
-    const { contentEl } = appendAssistantMessage('');
-
     const reader  = response.body.getReader();
     const decoder = new TextDecoder();
+    let buffer    = '';
     let fullText  = '';
+    let contentEl = null;
+    let assistantBubble = null;
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    const createAssistantBubble = () => {
+      typingEl.remove();
+      const assistantMessage = appendAssistantMessage('');
+      assistantBubble = assistantMessage.wrapper;
+      return assistantMessage.contentEl;
+    };
 
-      const chunk = decoder.decode(value, { stream: true });
-      for (const line of chunk.split('\n')) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') break;
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.token) {
-            fullText += parsed.token;
-            contentEl.innerHTML = renderMarkdown(fullText);
-            scrollToBottom();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        let newlineIndex;
+
+        let gotDone = false;
+      while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+          const line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') {
+            gotDone = true;
+            break;
           }
-          if (parsed.error) throw new Error(parsed.error);
-        } catch (e) {
-          if (e.message && e.message !== 'Unexpected end of JSON input') {
-            // only rethrow real errors
-            if (e.message.startsWith('Unexpected')) continue;
-            throw e;
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.token) {
+              fullText += parsed.token;
+              if (!contentEl) contentEl = createAssistantBubble();
+              const displayText = stripLeadingRawJson(fullText);
+              contentEl.innerHTML = renderMarkdown(displayText);
+              scrollToBottom();
+            }
+            if (parsed.error) throw new Error(parsed.error);
+          } catch (e) {
+            if (e.message && e.message !== 'Unexpected end of JSON input') {
+              if (e.message.startsWith('Unexpected')) continue;
+              throw e;
+            }
           }
         }
+        if (gotDone) break;
       }
+    } catch (e) {
+      if (assistantBubble) {
+        assistantBubble.remove();
+      } else {
+        typingEl.remove();
+      }
+      throw e;
+    }
+
+    if (!contentEl) {
+      typingEl.remove();
+      const { contentEl: fallbackEl } = appendAssistantMessage('No response returned.');
+      conversationHistory.push({ role: 'assistant', content: fallbackEl.textContent });
+      return;
     }
 
     conversationHistory.push({ role: 'assistant', content: fullText });
@@ -316,18 +358,152 @@
   // ─── 7. MARKDOWN ──────────────────────────────────────────────────────────
 
   function renderMarkdown(text) {
-    return text
-      .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+    const codeBlocks = [];
+    const placeholder = '%%CODE_BLOCK_%d%%';
+
+    const cleaned = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, content) => {
+      const index = codeBlocks.length;
+      codeBlocks.push({ lang, content });
+      return placeholder.replace('%d', index);
+    });
+
+    const blocks = cleaned.split(/\n\n+/);
+    const html = blocks.map((block) => {
+      if (isMarkdownTable(block)) return renderMarkdownTable(block);
+      if (isMarkdownList(block)) return renderMarkdownList(block);
+      return renderMarkdownParagraph(block);
+    }).join('');
+
+    return restoreCodeBlocks(html, codeBlocks);
+  }
+
+  function stripLeadingRawJson(text) {
+    const trimmed = text.trimStart();
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+      return text;
+    }
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let i = 0; i < trimmed.length; i += 1) {
+      const ch = trimmed[i];
+
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === '\\') {
+          escaped = true;
+        } else if (ch === '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (ch === '"') {
+        inString = true;
+        continue;
+      }
+
+      if (ch === '{' || ch === '[') {
+        depth += 1;
+        continue;
+      }
+
+      if ((ch === '}' && depth > 0) || (ch === ']' && depth > 0)) {
+        depth -= 1;
+        if (depth === 0) {
+          const remainder = trimmed.slice(i + 1).trimStart();
+          if (remainder) {
+            return remainder;
+          }
+          break;
+        }
+      }
+    }
+
+    return text;
+  }
+
+  function restoreCodeBlocks(html, codeBlocks) {
+    return html.replace(/%%CODE_BLOCK_(\d+)%%/g, (_, index) => {
+      const block = codeBlocks[Number(index)];
+      if (!block) return '';
+      return `<pre><code>${escapeHtml(block.content)}</code></pre>`;
+    });
+  }
+
+  function isMarkdownTable(block) {
+    const lines = block.trim().split('\n').map((line) => line.trim()).filter(Boolean);
+    return lines.length > 1 && lines[0].includes('|') && /^\|?\s*:?[-]+:?(\s*\|\s*:?-+:?\s*)+\|?$/.test(lines[1]);
+  }
+
+  function renderMarkdownTable(block) {
+    const lines = block.trim().split('\n').map((line) => line.trim()).filter(Boolean);
+    const header = splitTableRow(lines[0]);
+    const rows = lines.slice(2).map(splitTableRow);
+
+    const headerHtml = header.map((cell) => `<th>${escapeHtml(cell)}</th>`).join('');
+    const rowsHtml = rows.map((row) => `
+      <tr>${row.map((cell) => `<td>${renderInlineMarkdown(cell)}</td>`).join('')}</tr>
+    `).join('');
+
+    return `
+      <div class="markdown-table-wrapper">
+        <table class="markdown-table">
+          <thead><tr>${headerHtml}</tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function splitTableRow(line) {
+    const cells = line.split('|').map((cell) => cell.trim());
+    if (cells[0] === '') cells.shift();
+    if (cells[cells.length - 1] === '') cells.pop();
+    return cells;
+  }
+
+  function isMarkdownList(block) {
+    return block.split('\n').every((line) => /^\s*([-*•]|\d+\.)\s+/.test(line));
+  }
+
+  function renderMarkdownList(block) {
+    const lines = block.split('\n');
+    const ordered = /^\s*\d+\./.test(lines[0]);
+    const tag = ordered ? 'ol' : 'ul';
+    const items = lines.map((line) => {
+      const content = line.replace(/^\s*([-*•]|\d+\.)\s+/, '').trim();
+      return `<li>${renderInlineMarkdown(content)}</li>`;
+    }).join('');
+
+    return `<${tag}>${items}</${tag}>`;
+  }
+
+  function renderMarkdownParagraph(block) {
+    const text = block.trim();
+    if (!text) return '';
+    const lines = text.split('\n');
+    const inner = lines.map((line) => renderInlineMarkdown(line.trim())).join('<br/>');
+    return `<p>${inner}</p>`;
+  }
+
+  function renderInlineMarkdown(text) {
+    return escapeHtml(text)
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>')
-      .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
-      .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-      .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-      .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/\n/g, '<br/>');
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  }
+
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   // ─── 8. DOM HELPERS ───────────────────────────────────────────────────────
@@ -348,6 +524,7 @@
     content.appendChild(textNode);
     wrapper.appendChild(content);
     chatContainer.appendChild(wrapper);
+    adjustMessageSizing(content);
     scrollToBottom();
     return wrapper;
   }
@@ -364,6 +541,7 @@
     wrapper.appendChild(avatar);
     wrapper.appendChild(contentEl);
     chatContainer.appendChild(wrapper);
+    adjustMessageSizing(contentEl);
     scrollToBottom();
     return { wrapper, contentEl };
   }
@@ -409,6 +587,22 @@
 
   function scrollToBottom() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+  
+  // Reduce font-size / apply long-message styling when content is large
+  function adjustMessageSizing(contentEl) {
+    if (!contentEl) return;
+    const txt = (contentEl.textContent || '').trim();
+    const longWord = txt.split(/\s+/).some(w => w.length > 60);
+    if (txt.length > 240 || longWord) {
+      contentEl.classList.add('long');
+    } else {
+      contentEl.classList.remove('long');
+    }
+  }
+  function normalizeBackendUrl(url) {
+    const normalized = (url || 'http://127.0.0.1:8000').trim().replace(/\/+$/, '');
+    return normalized.replace('http://localhost:', 'http://127.0.0.1:');
   }
 
   // ─── INIT ─────────────────────────────────────────────────────────────────

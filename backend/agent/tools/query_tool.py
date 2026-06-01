@@ -43,20 +43,20 @@ def make_query_tools(session_id: str, instance_url: str):
         try:
             result = await client.query(soql)
             records = result.get('records', [])
-            total   = result.get('totalSize', len(records))
+            total = result.get('totalSize', len(records))
 
-            # Strip Salesforce metadata attributes from each record
             clean = [_strip_attributes(r) for r in records]
+            if not clean:
+                return f'No records returned. Total size: {total}. Returned: 0.'
 
-            return json.dumps({
-                'total_size': total,
-                'returned':   len(clean),
-                'records':    clean,
-            }, indent=2, default=str)
+            return (
+                f'Total size: {total}. Returned: {len(clean)}.\n\n'
+                f'{_records_to_markdown_table(clean)}'
+            )
 
         except Exception as e:
             logger.error(f'SOQL query failed: {e}')
-            return json.dumps({'error': str(e)})
+            return f'Error: {str(e)}'
 
     # ─────────────────────────────────────────────────────────────────────────
 
@@ -76,16 +76,18 @@ def make_query_tools(session_id: str, instance_url: str):
         logger.info(f'Executing paginated SOQL: {soql}')
         try:
             records = await client.query_all(soql)
-            clean   = [_strip_attributes(r) for r in records]
+            clean = [_strip_attributes(r) for r in records]
+            if not clean:
+                return 'No records returned.'
 
-            return json.dumps({
-                'total_returned': len(clean),
-                'records':        clean,
-            }, indent=2, default=str)
+            return (
+                f'Total returned: {len(clean)}.\n\n'
+                f'{_records_to_markdown_table(clean)}'
+            )
 
         except Exception as e:
             logger.error(f'Paginated SOQL failed: {e}')
-            return json.dumps({'error': str(e)})
+            return f'Error: {str(e)}'
 
     # ─────────────────────────────────────────────────────────────────────────
 
@@ -248,6 +250,29 @@ def make_query_tools(session_id: str, instance_url: str):
 
 
 # ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+def _escape_markdown_cell(value) -> str:
+    value = '' if value is None else str(value)
+    return value.replace('|', '\\|').replace('\n', ' ')
+
+
+def _records_to_markdown_table(records: list) -> str:
+    headers = []
+    for record in records:
+        for key in record.keys():
+            if key not in headers:
+                headers.append(key)
+
+    header_row = '| ' + ' | '.join(headers) + ' |'
+    separator = '| ' + ' | '.join('---' for _ in headers) + ' |'
+    rows = []
+
+    for record in records:
+        cells = [_escape_markdown_cell(record.get(header, '')) for header in headers]
+        rows.append('| ' + ' | '.join(cells) + ' |')
+
+    return '\n'.join([header_row, separator] + rows)
+
 
 def _strip_attributes(record: dict) -> dict:
     """Remove Salesforce internal 'attributes' key from records."""
