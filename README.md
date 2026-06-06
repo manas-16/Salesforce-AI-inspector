@@ -267,12 +267,12 @@ Answers Salesforce questions without making any API calls:
 <p align="center">
   <img src="Screenshots/login trail.png" width="80%" />
   <img src="Screenshots/query records.png" width="80%" />
-  <img src="Screenshots/schema based search.png" width="80%" />
+  <img src="Screenshots/schema based search.png" width="40%" />
 </p>
 
 <p align="center">
   <img src="Screenshots/Current Context query.png" width="80%" />
-  <img src="Screenshots/Functionality Search.png" width="80%" />
+  <img src="Screenshots/Functionality Search.png" width="40%" />
   <img src="Screenshots/User based access analysis.png" width="80%" />
 </p>
 
