@@ -14,8 +14,14 @@
 
   "host_permissions": [
     "https://*.salesforce.com/*",
+    "https://*.my.salesforce.com/*",
     "https://*.force.com/*",
     "https://*.lightning.force.com/*",
+    "https://*.trailblaze.lightning.force.com/*",
+    "https://*.trailblaze.my.salesforce.com/*",
+    "https://*.trailblaze.force.com/*",
+    "https://*.salesforce-setup.com/*",
+    "https://*.trailblaze.my.salesforce-setup.com/*",
     "http://localhost:*/*",
     "http://127.0.0.1:*/*"
   ],
@@ -24,8 +30,14 @@
     {
       "matches": [
         "https://*.salesforce.com/*",
+        "https://*.my.salesforce.com/*",
         "https://*.force.com/*",
-        "https://*.lightning.force.com/*"
+        "https://*.lightning.force.com/*",
+        "https://*.trailblaze.lightning.force.com/*",
+        "https://*.trailblaze.my.salesforce.com/*",
+        "https://*.trailblaze.force.com/*",
+        "https://*.salesforce-setup.com/*",
+        "https://*.trailblaze.my.salesforce-setup.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"
@@ -41,6 +53,7 @@
     },
     "default_title": "Salesforce (AI)nspector"
   },
+
   "options_ui": {
     "page": "settings/settings.html",
     "open_in_tab": false
@@ -52,11 +65,17 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["sidebar/sidebar.html"],
+      "resources": ["sidebar/sidebar.html", "sidebar/sidebar.css", "sidebar/sidebar.js"],
       "matches": [
         "https://*.salesforce.com/*",
+        "https://*.my.salesforce.com/*",
         "https://*.force.com/*",
-        "https://*.lightning.force.com/*"
+        "https://*.lightning.force.com/*",
+        "https://*.trailblaze.lightning.force.com/*",
+        "https://*.trailblaze.my.salesforce.com/*",
+        "https://*.trailblaze.force.com/*",
+        "https://*.salesforce-setup.com/*",
+        "https://*.trailblaze.my.salesforce-setup.com/*"
       ]
     }
   ]
