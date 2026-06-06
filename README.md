@@ -262,6 +262,32 @@ Answers Salesforce questions without making any API calls:
 - Error message explanations
 - Data model design advice
 
+### Working Screenshots
+
+<p align="center">
+  <img src="Screenshots/login trail.png" width="80%" />
+  <img src="Screenshots/query records.png" width="80%" />
+  <img src="Screenshots/schema based search.png" width="80%" />
+</p>
+
+<p align="center">
+  <img src="Screenshots/Current Context query.png" width="80%" />
+  <img src="Screenshots/Functionality Search.png" width="80%" />
+  <img src="Screenshots/User based access analysis.png" width="80%" />
+</p>
+
+<p align="center">
+  <img src="Screenshots/Object based automation.png" width="80%" />
+  <img src="Screenshots/Flow related search.png" width="80%" />
+  <img src="Screenshots/Flow explanation.png" width="80%" />
+</p>
+
+<p align="center">
+  <img src="Screenshots/Flow Explanation 2.png" width="80%" />
+  <img src="Screenshots/Audit trail analysis.png" width="80%" />
+  <img src="Screenshots/user management.png" width="80%" />
+</p>
+
 ---
 
 ## Example Usage
